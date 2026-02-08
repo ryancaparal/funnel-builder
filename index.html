@@ -2,135 +2,154 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>GHL Funnel Engine Builder</title>
+    <title>GHL Funnel Engine + Live Preview</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        ::-webkit-scrollbar { width: 8px; }
+        .iphone-x {
+            width: 375px; height: 667px;
+            border: 12px solid #1e293b; border-radius: 40px;
+            overflow: hidden; background: white;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            position: sticky; top: 20px;
+        }
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="bg-slate-100 font-sans">
+<body class="bg-slate-50">
 
 <div class="flex h-screen overflow-hidden">
-    <div class="w-1/2 p-8 overflow-y-auto bg-white border-r">
-        <header class="mb-8">
-            <h1 class="text-3xl font-extrabold text-slate-800">FunnelEngine <span class="text-blue-600">v1.0</span></h1>
-            <p class="text-slate-500">Create premium interactive funnels for GoHighLevel.</p>
-        </header>
+    <div class="w-2/5 p-8 overflow-y-auto border-r bg-white">
+        <h1 class="text-2xl font-bold text-blue-600 mb-2">FunnelEngine Pro</h1>
+        <p class="text-sm text-slate-500 mb-8">Customize your interactive quiz below.</p>
 
-        <section class="mb-10 bg-slate-50 p-6 rounded-2xl border border-slate-200">
-            <h2 class="text-lg font-bold mb-4 flex items-center">🎨 Style & Settings</h2>
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Brand Color</label>
-                    <input type="color" id="primaryColor" value="#3b82f6" class="w-full h-10 rounded-lg cursor-pointer">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Animation</label>
-                    <select id="animStyle" class="w-full h-10 px-3 rounded-lg border border-slate-300">
-                        <option value="animate-slide">Slide Right</option>
-                        <option value="animate-fade">Smooth Fade</option>
+        <div class="space-y-6">
+            <section class="p-4 bg-slate-50 rounded-xl">
+                <h3 class="font-bold mb-3 text-sm uppercase text-slate-400">Branding</h3>
+                <div class="flex gap-4">
+                    <input type="color" id="primaryColor" value="#3b82f6" oninput="updatePreview()" class="h-10 w-12 rounded cursor-pointer">
+                    <select id="animStyle" onchange="updatePreview()" class="flex-1 rounded border-slate-300 text-sm">
+                        <option value="animate-slide">Slide Animation</option>
+                        <option value="animate-fade">Fade Animation</option>
                     </select>
                 </div>
-            </div>
-            <div class="mt-4">
-                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Webhook URL (GHL)</label>
-                <input type="text" id="webhook" placeholder="Paste GHL Inbound Webhook" class="w-full h-10 px-3 rounded-lg border border-slate-300">
-            </div>
-        </section>
+            </section>
 
-        <section class="mb-10">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold">🙋 Questions</h2>
-                <button onclick="addQuestion()" class="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold hover:bg-blue-700">+ Add New</button>
-            </div>
-            <div id="questions-container" class="space-y-4">
+            <section>
+                <div class="flex justify-between mb-2">
+                    <h3 class="font-bold text-sm uppercase text-slate-400">Questions</h3>
+                    <button onclick="addQuestion()" class="text-blue-600 text-xs font-bold">+ Add Step</button>
                 </div>
-        </section>
-
-        <button onclick="generateFinalCode()" class="w-full bg-slate-900 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg transition-all active:scale-95">
-            🚀 Generate GHL Script
-        </button>
+                <div id="questions-container" class="space-y-4"></div>
+            </section>
+            
+            <button onclick="copyFinalCode()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg hover:bg-blue-700 transition">
+                Copy GHL Code
+            </button>
+        </div>
     </div>
 
-    <div class="w-1/2 bg-slate-900 p-8 flex flex-col relative">
-        <div class="flex justify-between items-center mb-4">
-            <h2 class="text-white font-bold">GHL Custom HTML Output</h2>
-            <button onclick="copyCode()" class="bg-slate-700 text-slate-300 px-3 py-1 rounded text-xs hover:bg-slate-600">Copy Code</button>
+    <div class="w-3/5 bg-slate-200 flex flex-col items-center justify-center p-8 relative">
+        <div class="mb-4 text-slate-500 font-medium text-sm flex items-center gap-2">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> 
+            Live Preview (Interactive)
         </div>
-        <textarea id="codeOutput" class="flex-grow bg-slate-800 text-blue-300 p-6 rounded-xl font-mono text-xs border border-slate-700 resize-none outline-none" readonly placeholder="Your code will appear here after clicking generate..."></textarea>
+        
+        <div class="iphone-x">
+            <iframe id="preview-frame" class="w-full h-full border-none"></iframe>
+        </div>
+
+        <button onclick="updatePreview()" class="mt-6 text-xs bg-white px-4 py-2 rounded-full shadow-sm text-slate-600 hover:bg-slate-50">
+            🔄 Refresh Preview
+        </button>
     </div>
 </div>
 
 <script>
     let questionsCount = 0;
 
+    // Initial Example Question
     function addQuestion() {
         questionsCount++;
         const id = `q_${questionsCount}`;
         const div = document.createElement('div');
-        div.className = "p-5 bg-white border border-slate-200 rounded-xl shadow-sm relative group";
-        div.id = id;
+        div.className = "p-4 bg-white border rounded-xl shadow-sm relative";
         div.innerHTML = `
-            <button onclick="document.getElementById('${id}').remove()" class="absolute top-2 right-2 text-slate-300 hover:text-red-500">✕</button>
-            <input type="text" placeholder="The Question (e.g. What is your goal?)" class="q-title w-full font-bold mb-3 border-b border-transparent focus:border-blue-500 outline-none">
-            <label class="block text-[10px] font-bold text-slate-400 uppercase">Options (Format: Label | Score | ImageURL)</label>
-            <textarea placeholder="Example: Ecommerce | 10 | https://image.com/icon.png" class="q-options w-full h-24 p-2 text-sm bg-slate-50 rounded mt-1 border border-slate-200 font-mono"></textarea>
+            <input type="text" placeholder="Question Title" oninput="updatePreview()" class="q-title w-full font-bold text-sm mb-2 outline-none border-b focus:border-blue-400" value="Question ${questionsCount}">
+            <textarea oninput="updatePreview()" placeholder="Option | Score | ImageURL" class="q-options w-full h-20 text-xs p-2 bg-slate-50 rounded font-mono">Option A | 5 | \nOption B | 10 | </textarea>
         `;
         document.getElementById('questions-container').appendChild(div);
+        updatePreview();
     }
 
-    function generateFinalCode() {
+    function generateFullHTML() {
         const color = document.getElementById('primaryColor').value;
         const anim = document.getElementById('animStyle').value;
-        const hook = document.getElementById('webhook').value;
         
+        // Collect Questions
         const qBlocks = document.querySelectorAll('#questions-container > div');
-        const questionsArray = [];
-
-        qBlocks.forEach((block, index) => {
-            const title = block.querySelector('.q-title').value;
-            const optionsRaw = block.querySelector('.q-options').value.split('\n');
-            const options = optionsRaw.map(line => {
-                const [text, score, img] = line.split('|').map(s => s.trim());
-                return { text, score: parseInt(score) || 0, img: img || '' };
+        const qArray = Array.from(qBlocks).map((block, i) => {
+            const options = block.querySelector('.q-options').value.split('\n').filter(l => l.trim()).map(line => {
+                const parts = line.split('|');
+                return { text: parts[0]?.trim(), score: parseInt(parts[1]) || 0, img: parts[2]?.trim() || '', nextId: `step_${i+1}` };
             });
-
-            questionsArray.push({
-                id: `step_${index}`,
-                question: title,
-                type: options[0].img ? 'image-grid' : 'list',
-                options: options.map((o, idx) => ({ ...o, nextId: `step_${index + 1}` }))
-            });
+            return { id: `step_${i}`, question: block.querySelector('.q-title').value, options };
         });
 
-        // The template for the GHL script (Shortened for brevity here)
-        const template = `
-<script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"><\/script>
-<style> :root { --primary: ${color}; } /* ... previous CSS styles here ... */ <\/style>
-<div class="quiz-container"><div id="quiz-flow"></div></div>
-<script>
-    const CONFIG = {
-        webhookURL: "${hook}",
-        animation: "${anim}",
-        questions: ${JSON.stringify(questionsArray, null, 2)}
-    };
-    // ... insert full JS logic here ...
-<\/script>
+        // This is the actual code that will run inside GHL and the Preview
+        return `
+            <html>
+            <head>
+                <script src="https://cdn.tailwindcss.com"><\/script>
+                <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"><\/script>
+                <style>
+                    :root { --primary: ${color}; }
+                    .opt-btn { width: 100%; padding: 12px; margin-bottom: 8px; border: 2px solid #eee; border-radius: 10px; text-align: left; transition: 0.2s; cursor: pointer; }
+                    .opt-btn:hover { border-color: var(--primary); background: #f0f7ff; }
+                    .${anim} { animation: in 0.4s ease forwards; }
+                    @keyframes in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                </style>
+            </head>
+            <body class="p-6 font-sans">
+                <div id="app"></div>
+                <script>
+                    const config = ${JSON.stringify(qArray)};
+                    let current = 0;
+                    function render() {
+                        const step = config[current];
+                        if(!step) { 
+                            document.getElementById('app').innerHTML = "<h2 class='text-xl font-bold text-center mt-20'>Lead Form Ready!</h2>";
+                            return; 
+                        }
+                        document.getElementById('app').innerHTML = \`
+                            <div class="${anim}">
+                                <h2 class="text-xl font-bold mb-6">\${step.question}</h2>
+                                \${step.options.map(o => \`<div class="opt-btn" onclick="next()">\${o.text}</div>\`).join('')}
+                            </div>
+                        \`;
+                    }
+                    function next() { current++; render(); }
+                    render();
+                <\/script>
+            </body>
+            </html>
         `;
-        document.getElementById('codeOutput').value = template;
     }
 
-    function copyCode() {
-        const text = document.getElementById('codeOutput');
-        text.select();
-        document.execCommand('copy');
-        alert('Copied to clipboard!');
+    function updatePreview() {
+        const frame = document.getElementById('preview-frame');
+        const html = generateFullHTML();
+        frame.srcdoc = html;
     }
 
-    // Initialize with one question
+    function copyFinalCode() {
+        const code = generateFullHTML();
+        navigator.clipboard.writeText(code);
+        alert("GHL Code Copied!");
+    }
+
+    // Start
     addQuestion();
 </script>
-
 </body>
 </html>
